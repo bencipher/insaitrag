@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "insait-agent"
+version = "0.1.0"
+description = ""
+authors = ["bcx <femolak@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pydantic-ai-slim = {extras = ["openai"], version = "^0.0.19"}
+python-dotenv = "^1.0.1"
+grpcio = "^1.69.0"
+chromadb-client = "^0.6.3"
+langchain = "^0.3.15"
+langchain-community = "^0.3.15"
+jq = "^1.8.0"
+langchain-openai = "^0.3.1"
+pydantic-ai = {extras = ["logfire"], version = "^0.0.19"}
+pydantic = "^2.10.5"
+streamlit = "^1.41.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

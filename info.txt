@@ -1,0 +1,23 @@
+Building a conversational agant
+Functionalities
+1. Order Status: When a user asks for the status of an order, the agent should ask for the
+order_id and then respond with the order status.
+2. Request Human Representative: Gather contact information for users who want to
+interact with a person. Contact information should include full name, email, and phone
+number. Save the information to a CSV file with a single row in the same folder as the
+execution file.
+3. Return Policies: The agent should know information about the following return policies:
+○ Q: What is the return policy for items purchased at our store?
+■ A: You can return most items within 30 days of purchase for a full refund or
+exchange. Items must be in their original condition, with all tags and
+packaging intact. Please bring your receipt or proof of purchase when
+returning items.
+○ Q: Are there any items that cannot be returned under this policy?
+■ A: Yes, certain items such as clearance merchandise, perishable goods, and
+personal care items are non-returnable. Please check the product description
+or ask a store associate for more details.
+○ Q: How will I receive my refund?
+■ A: Refunds will be issued to the original form of payment. If you paid by
+credit card, the refund will be credited to your card. If you paid by cash or
+check, you will receive a cash refund.
+
