@@ -1,0 +1,45 @@
+services:
+  insait-chat-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: insait_chat_agent
+    volumes:
+      - ./src:/app/src 
+      - ./main.py:/app/main.py
+      - backups:/backups
+    ports:
+      - "8501:8501" 
+    stdin_open: true
+    tty: true
+    environment:
+      - PYTHONUNBUFFERED=1
+      - RUN_MODE=${RUN_MODE}
+    command: python main.py
+    depends_on:
+      - vector-db
+
+
+  vector-db:
+    image: chromadb/chroma
+    ports:
+      - 8019:8000
+    environment:
+      CHROMA_SERVER_AUTHN_CREDENTIALS: ${CHROMA_AUTH_CREDENTIALS}
+      CHROMA_SERVER_AUTHN_PROVIDER: ${CHROMA_SERVER_AUTHN_PROVIDER}
+      CHROMA_AUTH_TOKEN_TRANSPORT_HEADER: ${CHROMA_AUTH_TOKEN_TRANSPORT_HEADER}
+      PERSIST_DIRECTORY: /chroma/chroma 
+    volumes:
+      - index_data:/chroma/chroma
+    networks:
+      - insait_net
+
+volumes:
+  index_data:
+    driver: local
+  backups:
+    driver: local
+
+networks:
+  insait_net:
+    driver: bridge
