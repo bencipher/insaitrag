@@ -28,6 +28,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import PydanticOutputParser
 import streamlit as st
 
+from utils import is_complete
+
 logfire.configure()
 
 logfire.info("Hello, {name}!", name="world")
@@ -69,28 +71,6 @@ def retrieve_faq(ctx: RunContext[CustomerAgentDeps], question: str) -> str:
         return "Answer not found in the FAQ."
 
 
-def is_complete(model_a: CustomerDetails, source_of_truth: CustomerDetails) -> bool:
-    """
-    Checks whether all fields in the CustomerDetails model are populated.
-
-    Args:
-        model_a (CustomerDetails): The current extracted details from input.
-        source_of_truth (CustomerDetails): The existing state of the customer details.
-
-    Returns:
-        bool: True if the model is complete, False otherwise.
-    """
-    for field, value in model_a.model_dump().items():
-        if value:
-            setattr(source_of_truth, field, value)
-
-    for field, value in source_of_truth.model_dump().items():
-        if value is None:
-            return False
-
-    return True
-
-
 @customer_rep_agent.tool
 def save_customer_contact(ctx: RunContext[CustomerAgentDeps], text_input: str) -> str:
     """
@@ -106,7 +86,6 @@ def save_customer_contact(ctx: RunContext[CustomerAgentDeps], text_input: str) -
     Returns:
         str: 'complete' if data is fully saved, 'incomplete' otherwise.
     """
-    # Assuming fieldnames are defined somewhere in your code
     fieldnames = [
         "index",
         "first_name",
@@ -140,7 +119,7 @@ def save_customer_contact(ctx: RunContext[CustomerAgentDeps], text_input: str) -
 
         with open(file_path, "a", newline="") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            if not os.path.exists(file_path):
+            if os.path.getsize(file_path) == 0:
                 writer.writeheader()
             writer.writerow(ordered_data)
         return "complete"
@@ -212,6 +191,9 @@ def to_chat_message(m: ModelMessage) -> ChatMessage:
 def run_streamlit():
     st.title("Conversational Agent")
 
+    with st.chat_message("assistant"):
+        st.write("Hi human, I am here to help, go ahead with your questions")
+
     if "client_history" not in st.session_state:
         st.session_state.client_history = []
     if "messages" not in st.session_state:
@@ -258,10 +240,8 @@ def run_streamlit():
             ai_reply = faq_answer.data
         except APIConnectionError as e:
             ai_reply = f"API connection error: {e}"
-            st.error(ai_reply)
         except Exception as e:
             ai_reply = f"An unexpected error occurred: {e}"
-            st.error(ai_reply)
         finally:
             asyncio.set_event_loop(None)
 

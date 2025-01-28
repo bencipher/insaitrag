@@ -1,19 +1,23 @@
-def extract_customer_info(
-    input_text: str, client, model: str, response_model
-) -> CustomerDetails:
-    """Extract a structured output of customer info present in input"""
-    messages = [
-        {
-            "role": "system",
-            "content": "You are an assistant that extracts details from invoices.",
-        },
-        {
-            "role": "user",
-            "content": f"Extract customer details from {input_text}. Only return with those present in input text",
-        },
-    ]
+from models import CustomerDetails
 
-    response = client.beta.chat.completions.parse(
-        model=model, messages=messages, response_format=response_model
-    )
-    return response.choices[0].message.parsed
+
+def is_complete(model_a: CustomerDetails, source_of_truth: CustomerDetails) -> bool:
+    """
+    Checks whether all fields in the CustomerDetails model are populated.
+
+    Args:
+        model_a (CustomerDetails): The current extracted details from input.
+        source_of_truth (CustomerDetails): The existing state of the customer details.
+
+    Returns:
+        bool: True if the model is complete, False otherwise.
+    """
+    for field, value in model_a.model_dump().items():
+        if value:
+            setattr(source_of_truth, field, value)
+
+    for field, value in source_of_truth.model_dump().items():
+        if value is None:
+            return False
+
+    return True
