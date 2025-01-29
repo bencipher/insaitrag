@@ -176,29 +176,15 @@ deps = CustomerAgentDeps(
 )
 
 
-async def async_get_faq_answer(user_prompt, deps, messages):
-    # Run the async function directly
-    faq_answer = await customer_rep_agent.run_sync(
-        user_prompt, deps=deps, message_history=messages
-    )
-    return faq_answer
-
-
-def get_faq_answer(user_prompt, deps, messages):
-    # Use asyncio.run to execute the async function
-    return asyncio.run(async_get_faq_answer(user_prompt, deps, messages))
-
 
 def run_streamlit():
     st.title("Conversational Agent")
-
-    with st.chat_message("assistant"):
-        st.write("Hi human, I am here to help, go ahead with your questions")
 
     if "client_history" not in st.session_state:
         st.session_state.client_history = []
     if "messages" not in st.session_state:
         st.session_state.messages = []
+
 
     for message in st.session_state.client_history:
         with st.chat_message(message["role"]):
@@ -221,12 +207,26 @@ def run_streamlit():
         st.session_state.messages.append(model_request)
         st.session_state.client_history.append({"role": "user", "content": user_prompt})
 
-        # Call the synchronous wrapper function
-        faq_answer = get_faq_answer(user_prompt, deps, st.session_state.messages)
-        if faq_answer is None:
-            ai_reply = "An error occurred while retrieving the FAQ answer."
-        else:
-            ai_reply = getattr(faq_answer, "data", "No data available")
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        try:
+
+            faq_answer = customer_rep_agent.run_sync(
+                user_prompt, deps=deps, message_history=st.session_state.messages
+            )
+            ai_reply = faq_answer.data
+        except APIConnectionError as e:
+            ai_reply = f"API connection error: {e}"
+            st.error(ai_reply)
+        except Exception as e:
+            ai_reply = f"An unexpected error occurred: {e}"
+            st.error(ai_reply)
+        finally:
+            asyncio.set_event_loop(None)
 
         with st.chat_message("assistant"):
             st.markdown(ai_reply)
@@ -240,7 +240,6 @@ def run_streamlit():
         st.session_state.client_history.append(
             {"role": "assistant", "content": ai_reply}
         )
-
 
 def run_cli():
     print("AI: Hi human, I am here to help")
@@ -281,13 +280,13 @@ def run_cli():
 import sys
 
 if __name__ == "__main__":
-    print(sys.argv)
-    if len(sys.argv) > 1:
-        mode = sys.argv[1].lower()
+    # print(sys.argv)
+    # if len(sys.argv) > 1:
+    #     mode = sys.argv[1].lower()
 
-        if mode == "cli":
-            print("running CLI")
-            run_cli()
+    #     if mode == "cli":
+    #         print("running CLI")
+    #         run_cli()
 
-    print("running browser")
+    # print("running browser")
     run_streamlit()
