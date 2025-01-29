@@ -12,7 +12,6 @@ from libs.chroma_db import chroma_client
 load_dotenv()
 
 # Constants
-COLLECTION_NAME = "insait2"
 FILE_PATH = "faq.json"
 
 
