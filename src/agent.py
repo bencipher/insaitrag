@@ -3,9 +3,11 @@ import csv
 from datetime import datetime, timezone
 import os
 from typing import Any
+from langchain_google_genai import ChatGoogleGenerativeAI
 from openai import APIConnectionError
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.gemini import GeminiModel
 from dotenv import load_dotenv
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.exceptions import UnexpectedModelBehavior
@@ -16,18 +18,20 @@ from pydantic_ai.messages import (
     TextPart,
     UserPromptPart,
 )
+from libs.chroma_db.chroma_client import ChromaBaseClient, CustomEmbeddingFunction
 from templates import system_prompt
 import logfire
-import chromadb
 from models import ChatMessage, CustomerAgentDeps, CustomerDetails
 from mock import order_statuses
 from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
+
 from pydantic_ai import RunContext
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import PydanticOutputParser
 import streamlit as st
-
 from utils import is_complete
 
 logfire.configure()
@@ -35,7 +39,8 @@ logfire.configure()
 logfire.info("Hello, {name}!", name="world")
 
 load_dotenv()
-model = OpenAIModel("gpt-4o", api_key=os.environ.get("OPENAI_API_KEY"))
+# model = OpenAIModel("gpt-4o", api_key=os.environ.get("OPENAI_API_KEY"))
+model = GeminiModel("gemini-1.5-flash", api_key=os.environ.get("GEMINI_API_KEY"))
 customer_rep_agent = Agent(
     model, deps_type=CustomerAgentDeps, system_prompt=system_prompt, retries=2
 )
@@ -57,14 +62,8 @@ def retrieve_faq(ctx: RunContext[CustomerAgentDeps], question: str) -> str:
         print(answer)"""
     print(f"In FAQ retriever: {ctx=}")
     logfire.info("Questions passed in is {question}", question=question)
-    openai_ef = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
-    question_embedding = openai_ef.embed_query(question)
-    chroma_client = chromadb.HttpClient(host="localhost", port=8019)
-    collection_name = "insait"
-    db_collection = chroma_client.get_collection(collection_name)
-    similar_documents = db_collection.query(
-        query_embeddings=question_embedding, n_results=1
-    )
+    question_embedding = ctx.deps.embed_fxn.embed_query(question)  # must pass I guess
+    similar_documents = ctx.deps.vector_client.query(question_embedding)
     if similar_documents["documents"]:
         return similar_documents["documents"][0]
     else:
@@ -138,6 +137,7 @@ def extract_customer_info(input_text: str, llm, response_model) -> CustomerDetai
         input_variables=["input_text"],
         partial_variables={"format_instr": parser.get_format_instructions()},
     )
+    print(input_text, response_model)
     ai = prompt | llm | parser
     resp = ai.invoke({"input_text": input_text})
     return resp
@@ -186,7 +186,24 @@ def to_chat_message(m: ModelMessage) -> ChatMessage:
                 "content": first_part.content,
             }
     raise UnexpectedModelBehavior(f"Unexpected message type for chat app: {m}")
+gemini_ef = GoogleGenerativeAIEmbeddings(
+    model="models/embedding-001", google_api_key=os.environ.get("GEMINI_API_KEY")
+)
+openai_ef = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
+embedding_fxn = CustomEmbeddingFunction(openai_ef)
+embedding_fxn_1 = CustomEmbeddingFunction(gemini_ef)
 
+
+deps = CustomerAgentDeps(
+    existing_data=CustomerDetails(),
+    filepath="output.csv",
+    # llm=ChatOpenAI(temperature=0, model="gpt-4o"),
+    llm=ChatGoogleGenerativeAI(
+        model="gemini-1.5-flash", api_key=os.environ.get("GEMINI_API_KEY")
+    ),
+    vector_client=ChromaBaseClient(os.environ.get("CHROMA_DB_NAME"), embedding_fxn),
+    embed_fxn=embedding_fxn_1,
+)
 
 def run_streamlit():
     st.title("Conversational Agent")
@@ -198,12 +215,6 @@ def run_streamlit():
         st.session_state.client_history = []
     if "messages" not in st.session_state:
         st.session_state.messages = []
-
-    deps = CustomerAgentDeps(
-        existing_data=CustomerDetails(),
-        filepath="output.csv",
-        llm=ChatOpenAI(temperature=0, model="gpt-4o"),
-    )
 
     for message in st.session_state.client_history:
         with st.chat_message(message["role"]):
@@ -262,11 +273,7 @@ def run_streamlit():
 def run_cli():
     print("AI: Hi human, I am here to help")
     all_messages = []
-    deps = CustomerAgentDeps(
-        existing_data=CustomerDetails(),
-        filepath="output.csv",
-        llm=ChatOpenAI(temperature=0, model="gpt-4o"),
-    )
+
     while True:
         user_val = input("User: ")
         user_prompt_part = UserPromptPart(
