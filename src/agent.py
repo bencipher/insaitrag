@@ -38,8 +38,7 @@ logfire.configure()
 logfire.info("Hello, {name}!", name="world")
 
 load_dotenv()
-# model = OpenAIModel("gpt-4o", api_key=os.environ.get("OPENAI_API_KEY"))
-model = GeminiModel("gemini-1.5-flash", api_key=os.environ.get("GEMINI_API_KEY"))
+model = OpenAIModel("gpt-4o", api_key=os.environ.get("OPENAI_API_KEY"))
 customer_rep_agent = Agent(
     model, deps_type=CustomerAgentDeps, system_prompt=system_prompt, retries=2
 )
@@ -158,21 +157,16 @@ def get_order_status(ctx: RunContext[None], order_id: str) -> str:
     else:
         return "Order not found."
 
-gemini_ef = GoogleGenerativeAIEmbeddings(
-    model="models/embedding-001", google_api_key=os.environ.get("GEMINI_API_KEY")
-)
+
 openai_ef = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
 deps = CustomerAgentDeps(
     existing_data=CustomerDetails(),
     filepath="output.csv",
-    # llm=ChatOpenAI(temperature=0, model="gpt-4o"),
-    llm=ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash", api_key=os.environ.get("GEMINI_API_KEY")
-    ),
-    vector_client=ChromaBaseClient(os.environ.get("CHROMA_DB_NAME"), gemini_ef),
-    embed_fxn=gemini_ef,
+    llm=ChatOpenAI(temperature=0, model="gpt-4o"),
+    vector_client=ChromaBaseClient(os.environ.get("CHROMA_DB_NAME"), openai_ef),
+    embed_fxn=openai_ef,
 )
 
 
@@ -280,13 +274,13 @@ def run_cli():
 import sys
 
 if __name__ == "__main__":
-    # print(sys.argv)
-    # if len(sys.argv) > 1:
-    #     mode = sys.argv[1].lower()
+    print(sys.argv)
+    if len(sys.argv) > 1:
+        mode = sys.argv[1].lower()
 
-    #     if mode == "cli":
-    #         print("running CLI")
-    #         run_cli()
+        if mode == "cli":
+            print("running CLI")
+            run_cli()
 
-    # print("running browser")
+    print("running browser")
     run_streamlit()

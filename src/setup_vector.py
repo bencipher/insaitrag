@@ -83,16 +83,13 @@ if __name__ == "__main__":
     documents = document_processor.load_json_doc()
     print(f"{documents=}")
     chunks = document_processor.process_documents(documents)
-    gemini_ef = GoogleGenerativeAIEmbeddings(
-        model="models/embedding-001", google_api_key=os.environ.get("GEMINI_API_KEY")
-    )
+    
     openai_ef = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
     embedding_fxn = chroma_client.CustomEmbeddingFunction(openai_ef)
-    embedding_fxn_1 = chroma_client.CustomEmbeddingFunction(gemini_ef)
     chromadb_client = chroma_client.ChromaBaseClient(
         collection_name=os.environ.get("CHROMA_DB_NAME"),
-        embedding_function=embedding_fxn_1,
+        embedding_function=embedding_fxn,
     )
-    embedding_indexer = EmbeddingIndexer(chromadb_client, gemini_ef)
+    embedding_indexer = EmbeddingIndexer(chromadb_client, openai_ef)
     embedding_indexer.index_documents(chunks)
     print("Operation successful. Documents have been indexed.")

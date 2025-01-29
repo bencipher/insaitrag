@@ -1,3 +1,4 @@
+
 # **Conversational Agent Documentation**
 
 ## **Overview**
@@ -103,7 +104,7 @@ The agent can run in two modes: CLI Mode (local use) and Browser Mode (local or 
 1. **Run the Application**  
    To start the agent locally, execute the following command:
    ```bash
-   python main.py
+   python entry.py
    ```
 
 2. **Select a Mode**  
@@ -134,16 +135,21 @@ If you prefer to use the agent entirely in Docker (Browser Mode only), follow th
 3. **Access the Streamlit Interface**  
    Once the container is running, access the agent via a browser at the URL provided by Streamlit (e.g., `http://localhost:8501`).
 
+> **Important Warning**  
+> While running via Docker, the Streamlit interface currently has a bug that prevents the agent from generating CSVs. Although the agent can still perform RAG (Retrieval-Augmented Generation), manage order, and take in user details, Streamlit is unstable in Docker at the moment. **It is recommended to run the agent manually using `python entry.py` for a more stable experience**.
+
+---
+
 ## **Summary of Usage Modes**
 
 1. **CLI Mode**
    - **Use Case**: Local execution only.
-   - **How to Run**: Start the application locally (`python main.py`) and select CLI Mode when prompted.
+   - **How to Run**: Start the application locally (`python entry.py`) and select CLI Mode when prompted.
 
 2. **Browser Mode**
    - **Use Case**: Available both locally and in full Docker deployment.
    - **How to Run**:
-     - **Locally**: Start the application locally (`python main.py`) and select Browser Mode when prompted.
+     - **Locally**: Start the application locally (`python entry.py`) and select Browser Mode when prompted.
      - **In Docker**: Set `RUN_MODE=browser` and execute the Docker build command.
 
 ---
