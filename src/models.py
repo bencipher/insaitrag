@@ -1,5 +1,5 @@
 from typing import Optional, Union
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_openai import ChatOpenAI
 from typing_extensions import Literal, TypedDict
 from pydantic import BaseModel
@@ -20,7 +20,7 @@ class CustomerAgentDeps(BaseModel):
     filepath: str
     llm: Union[ChatGoogleGenerativeAI, ChatOpenAI]
     vector_client: ChromaBaseClient
-    embed_fxn: CustomEmbeddingFunction
+    embed_fxn: GoogleGenerativeAIEmbeddings
 
     class Config:
         arbitrary_types_allowed = True

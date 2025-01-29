@@ -21,18 +21,17 @@ from pydantic_ai.messages import (
 from libs.chroma_db.chroma_client import ChromaBaseClient, CustomEmbeddingFunction
 from templates import system_prompt
 import logfire
-from models import ChatMessage, CustomerAgentDeps, CustomerDetails
+from models import CustomerAgentDeps, CustomerDetails
 from mock import order_statuses
 from langchain_openai import OpenAIEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 from pydantic_ai import RunContext
-from langchain_core.prompts import PromptTemplate
+
 from langchain_openai import ChatOpenAI
-from langchain_core.output_parsers import PydanticOutputParser
 import streamlit as st
-from utils import is_complete
+from utils import extract_custom_info, is_complete
 
 logfire.configure()
 
@@ -49,17 +48,22 @@ customer_rep_agent = Agent(
 @customer_rep_agent.tool
 def retrieve_faq(ctx: RunContext[CustomerAgentDeps], question: str) -> str:
     """
-    Function to retrieve answers from a predefined FAQ set.
+    This tool answers all of customer queries or complaints using a predefined FAQ as source of truth.
+
+    This function searches the store's FAQ database to provide answers to customer inquiries,
+    including store policies, returns, and general concerns. If an exact match isn't found,
+    it returns a default response guiding the customer to further assistance.
 
     Args:
-        question (str): The question to query the FAQ.
+        question (str): The customer’s query or complaint.
 
     Returns:
-        str: The answer to the question if found, or a default message if not.
+        str: The most relevant answer from the FAQ, or a default response if no match is found.
 
     Example Usage:
         answer = retrieve_faq("What is the return policy for items purchased at our store?")
-        print(answer)"""
+        print(answer)
+    """
     print(f"In FAQ retriever: {ctx=}")
     logfire.info("Questions passed in is {question}", question=question)
     question_embedding = ctx.deps.embed_fxn.embed_query(question)  # must pass I guess
@@ -96,7 +100,7 @@ def save_customer_contact(ctx: RunContext[CustomerAgentDeps], text_input: str) -
         "timestamp",
     ]
 
-    new_extract = extract_customer_info(
+    new_extract = extract_custom_info(
         text_input, llm=ctx.deps.llm, response_model=CustomerDetails
     )
 
@@ -129,20 +133,6 @@ def save_customer_contact(ctx: RunContext[CustomerAgentDeps], text_input: str) -
         return f"incomplete: missing fields - {', '.join(missing_fields)}"
 
 
-def extract_customer_info(input_text: str, llm, response_model) -> CustomerDetails:
-    """Extract a structured output of customer info present in input"""
-    parser = PydanticOutputParser(pydantic_object=response_model)
-    prompt = PromptTemplate(
-        template="Extract custoemr details from the given text.\n{format_instr}\n{input_text}",
-        input_variables=["input_text"],
-        partial_variables={"format_instr": parser.get_format_instructions()},
-    )
-    print(input_text, response_model)
-    ai = prompt | llm | parser
-    resp = ai.invoke({"input_text": input_text})
-    return resp
-
-
 @customer_rep_agent.tool
 def get_order_status(ctx: RunContext[None], order_id: str) -> str:
     """
@@ -168,30 +158,10 @@ def get_order_status(ctx: RunContext[None], order_id: str) -> str:
     else:
         return "Order not found."
 
-
-def to_chat_message(m: ModelMessage) -> ChatMessage:
-    first_part = m.parts[0]
-    if isinstance(m, ModelRequest):
-        if isinstance(first_part, UserPromptPart):
-            return {
-                "role": "user",
-                "timestamp": first_part.timestamp.isoformat(),
-                "content": first_part.content,
-            }
-    elif isinstance(m, ModelResponse):
-        if isinstance(first_part, TextPart):
-            return {
-                "role": "model",
-                "timestamp": m.timestamp.isoformat(),
-                "content": first_part.content,
-            }
-    raise UnexpectedModelBehavior(f"Unexpected message type for chat app: {m}")
 gemini_ef = GoogleGenerativeAIEmbeddings(
     model="models/embedding-001", google_api_key=os.environ.get("GEMINI_API_KEY")
 )
 openai_ef = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
-embedding_fxn = CustomEmbeddingFunction(openai_ef)
-embedding_fxn_1 = CustomEmbeddingFunction(gemini_ef)
 
 
 deps = CustomerAgentDeps(
@@ -201,8 +171,8 @@ deps = CustomerAgentDeps(
     llm=ChatGoogleGenerativeAI(
         model="gemini-1.5-flash", api_key=os.environ.get("GEMINI_API_KEY")
     ),
-    vector_client=ChromaBaseClient(os.environ.get("CHROMA_DB_NAME"), embedding_fxn),
-    embed_fxn=embedding_fxn_1,
+    vector_client=ChromaBaseClient(os.environ.get("CHROMA_DB_NAME"), gemini_ef),
+    embed_fxn=gemini_ef,
 )
 
 def run_streamlit():

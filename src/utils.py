@@ -1,5 +1,6 @@
 from models import CustomerDetails
-
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import PydanticOutputParser
 
 def is_complete(model_a: CustomerDetails, source_of_truth: CustomerDetails) -> bool:
     """
@@ -21,3 +22,16 @@ def is_complete(model_a: CustomerDetails, source_of_truth: CustomerDetails) -> b
             return False
 
     return True
+
+
+def extract_custom_info(input_text: str, llm, response_model) -> CustomerDetails:
+    """Extract a structured output of customer info present in input"""
+    parser = PydanticOutputParser(pydantic_object=response_model)
+    prompt = PromptTemplate(
+        template="Extract customer details from the given text.\n{format_instr}\n{input_text}",
+        input_variables=["input_text"],
+        partial_variables={"format_instr": parser.get_format_instructions()},
+    )
+    ai = prompt | llm | parser
+    resp = ai.invoke({"input_text": input_text})
+    return resp
