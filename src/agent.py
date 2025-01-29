@@ -55,7 +55,7 @@ def retrieve_faq(ctx: RunContext[CustomerAgentDeps], question: str) -> str:
     it returns a default response guiding the customer to further assistance.
 
     Args:
-        question (str): The customer’s query or complaint.
+        question (str): The customer's query or complaint.
 
     Returns:
         str: The most relevant answer from the FAQ, or a default response if no match is found.
@@ -175,6 +175,18 @@ deps = CustomerAgentDeps(
     embed_fxn=gemini_ef,
 )
 
+
+async def async_get_faq_answer(user_prompt, deps, messages):
+    # Run the async function directly
+    faq_answer = await customer_rep_agent.run_sync(user_prompt, deps, messages)
+    return faq_answer
+
+
+def get_faq_answer(user_prompt, deps, messages):
+    # Use asyncio.run to execute the async function
+    return asyncio.run(async_get_faq_answer(user_prompt, deps, messages))
+
+
 def run_streamlit():
     st.title("Conversational Agent")
 
@@ -207,24 +219,12 @@ def run_streamlit():
         st.session_state.messages.append(model_request)
         st.session_state.client_history.append({"role": "user", "content": user_prompt})
 
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        try:
-
-            faq_answer = customer_rep_agent.run_sync(
-                user_prompt, deps=deps, message_history=st.session_state.messages
-            )
-            ai_reply = faq_answer.data
-        except APIConnectionError as e:
-            ai_reply = f"API connection error: {e}"
-        except Exception as e:
-            ai_reply = f"An unexpected error occurred: {e}"
-        finally:
-            asyncio.set_event_loop(None)
+        # Call the synchronous wrapper function
+        faq_answer = get_faq_answer(user_prompt, deps, st.session_state.messages)
+        if faq_answer is None:
+            ai_reply = "An error occurred while retrieving the FAQ answer."
+        else:
+            ai_reply = getattr(faq_answer, "data", "No data available")
 
         with st.chat_message("assistant"):
             st.markdown(ai_reply)
