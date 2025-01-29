@@ -117,7 +117,7 @@ The chatbot’s performance was evaluated using predefined dialogues and perform
 
 ### **Demo**
 
-For a short demo, watch: [https://jam.dev/c/c0878dec-78f3-40af-a662-4e94460472b2](https://jam.dev/c/c0878dec-78f3-40af-a662-4e94460472b2)
+For a short demo, watch: [https://jam.dev/c/c0878dec-78f3-40af-a662-4e94460472b2](https://jam.dev/c/c0878dec-78f3-40af-a662-4e94460472b2) and [https://jam.dev/c/43b723f8-def5-45cb-ba1e-9fc3346d06c0](https://jam.dev/c/43b723f8-def5-45cb-ba1e-9fc3346d06c0)
 
 ## **Sample Queries and Responses**
 
