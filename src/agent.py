@@ -178,7 +178,9 @@ deps = CustomerAgentDeps(
 
 async def async_get_faq_answer(user_prompt, deps, messages):
     # Run the async function directly
-    faq_answer = await customer_rep_agent.run_sync(user_prompt, deps, messages)
+    faq_answer = await customer_rep_agent.run_sync(
+        user_prompt, deps=deps, message_history=messages
+    )
     return faq_answer
 
 
