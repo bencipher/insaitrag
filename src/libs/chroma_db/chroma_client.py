@@ -5,12 +5,6 @@ import chromadb
 from chromadb.config import Settings
 from dotenv import load_dotenv
 
-load_dotenv()
-import os
-from typing import Optional
-import chromadb
-from chromadb.config import Settings
-from dotenv import load_dotenv
 from chromadb.api.types import EmbeddingFunction
 
 load_dotenv()
