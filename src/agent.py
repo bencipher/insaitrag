@@ -2,29 +2,24 @@ import asyncio
 import csv
 from datetime import datetime, timezone
 import os
-from typing import Any
-from langchain_google_genai import ChatGoogleGenerativeAI
 from openai import APIConnectionError
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.models.gemini import GeminiModel
 from dotenv import load_dotenv
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.messages import (
-    ModelMessage,
     ModelRequest,
     ModelResponse,
     TextPart,
     UserPromptPart,
 )
-from libs.chroma_db.chroma_client import ChromaBaseClient, CustomEmbeddingFunction
+from libs.chroma_db.chroma_client import ChromaBaseClient
 from templates import system_prompt
 import logfire
 from models import CustomerAgentDeps, CustomerDetails
 from mock import order_statuses
 from langchain_openai import OpenAIEmbeddings
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 
 from pydantic_ai import RunContext
