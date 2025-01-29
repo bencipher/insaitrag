@@ -3,7 +3,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmb
 from langchain_openai import ChatOpenAI
 from typing_extensions import Literal, TypedDict
 from pydantic import BaseModel
-from libs.chroma_db.chroma_client import ChromaBaseClient, CustomEmbeddingFunction
+from libs.chroma_db.chroma_client import ChromaBaseClient
 
 
 class CustomerDetails(BaseModel):
