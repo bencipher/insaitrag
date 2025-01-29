@@ -1,41 +1,19 @@
 import os
 import uuid
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_openai import OpenAIEmbeddings
 from langchain.schema import Document
-from langchain_community.document_loaders import JSONLoader
 import json
-import chromadb
-from chromadb.config import Settings
-from chromadb.api.types import EmbeddingFunction
+
 from dotenv import load_dotenv
+
+from libs.chroma_db import chroma_client
 
 load_dotenv()
 
 # Constants
 COLLECTION_NAME = "insait2"
 FILE_PATH = "faq.json"
-
-# Initialize Chroma client
-chroma_client = chromadb.HttpClient(
-    host="localhost",
-    port=8019,
-    settings=Settings(
-        chroma_client_auth_provider="chromadb.auth.token_authn.TokenAuthClientProvider",
-        chroma_client_auth_credentials=os.environ.get("CHROMA_AUTH_CREDENTIALS"),
-        chroma_auth_token_transport_header=os.environ.get(
-            "CHROMA_AUTH_TOKEN_TRANSPORT_HEADER"
-        ),
-    ),
-)
-
-
-class OpenAIEmbeddingFunction(EmbeddingFunction):
-    def __init__(self, openai_embeddings):
-        self.openai_embeddings = openai_embeddings
-
-    def __call__(self, input):
-        return self.openai_embeddings.embed_documents(input)
 
 
 # class to manage documents loading and processing
@@ -70,23 +48,13 @@ class DocumentProcessor:
 
 # Class to handle embedding and indexing
 class EmbeddingIndexer:
-    def __init__(self, collection_name, chroma_client, openai_ef):
-        self.collection_name = collection_name
-        self.chroma_client = chroma_client
-        self.openai_ef = openai_ef
 
-    def get_collection(self):
-        existing_collections = self.chroma_client.list_collections()
-        if self.collection_name not in existing_collections:
-            return self.chroma_client.create_collection(
-                name=self.collection_name,
-                embedding_function=OpenAIEmbeddingFunction(self.openai_ef),
-            )
-        else:
-            return self.chroma_client.get_collection(self.collection_name)
+    def __init__(self, chroma_client: chroma_client.ChromaBaseClient, embedding_f):
+
+        self.chroma_client = chroma_client
+        self.embedding_fxn = embedding_f
 
     def index_documents(self, documents):
-        db_collection = self.get_collection()
         for doc in documents:
             if not doc.page_content:
                 print(f"Skipping document with empty page_content: {doc}")
@@ -98,13 +66,13 @@ class EmbeddingIndexer:
                 print(f"Missing metadata key: {e}")
                 continue
 
-            existing_data = db_collection.get(where={"question": question})
+            existing_data = self.chroma_client.get(where={"question": question})
             if not existing_data["documents"]:
-                chunk_embedding = self.openai_ef.embed_documents([doc.page_content])
+                chunk_embedding = self.embedding_fxn.embed_documents([doc.page_content])
                 doc_id = str(uuid.uuid4())
-                db_collection.add(
+                self.chroma_client.add_record(
                     ids=[doc_id],
-                    documents=[doc.page_content],
+                    docs=[doc.page_content],
                     metadatas=[doc.metadata],
                     embeddings=[chunk_embedding[0]],
                 )
@@ -116,7 +84,13 @@ if __name__ == "__main__":
     documents = document_processor.load_json_doc()
     print(f"{documents=}")
     chunks = document_processor.process_documents(documents)
-
+    gemini_ef = GoogleGenerativeAIEmbeddings(
+        model="models/embedding-001", google_api_key=os.environ.get("GEMINI_API_KEY")
+    )
     openai_ef = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
-    embedding_indexer = EmbeddingIndexer(COLLECTION_NAME, chroma_client, openai_ef)
+    chromadb_client = chroma_client.ChromaBaseClient(
+        collection_name=os.environ.get("CHROMA_DB_NAME"), embedding_function=gemini_ef
+    )
+    embedding_indexer = EmbeddingIndexer(chromadb_client, gemini_ef)
     embedding_indexer.index_documents(chunks)
+    print("Operation successful. Documents have been indexed.")
