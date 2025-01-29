@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: insait_chat_agent
+    container_name: chat_agent
     volumes:
       - ./src:/app/src 
       - ./main.py:/app/main.py
@@ -18,12 +18,15 @@ services:
     command: python main.py
     depends_on:
       - vector-db
+    networks:
+      - insait_net
 
 
   vector-db:
     image: chromadb/chroma
+    container_name: vector_db
     ports:
-      - 8019:8000
+      - "8019:8000"
     environment:
       CHROMA_SERVER_AUTHN_CREDENTIALS: ${CHROMA_AUTH_CREDENTIALS}
       CHROMA_SERVER_AUTHN_PROVIDER: ${CHROMA_SERVER_AUTHN_PROVIDER}
