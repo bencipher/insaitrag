@@ -1,13 +1,12 @@
 import os
 import uuid
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_openai import OpenAIEmbeddings
 from langchain.schema import Document
 import json
 
 from dotenv import load_dotenv
 
 from libs.chroma_db import chroma_client
+from llm_models.source import ModelFactory
 
 load_dotenv()
 
@@ -78,18 +77,17 @@ class EmbeddingIndexer:
 
 
 if __name__ == "__main__":
-    # Process documents and index them
+    llm_model = ModelFactory().get_llm("gemini")
+    llm_embedding = ModelFactory().get_embedding("gemini")
+
     document_processor = DocumentProcessor(FILE_PATH)
     documents = document_processor.load_json_doc()
-    print(f"{documents=}")
     chunks = document_processor.process_documents(documents)
-    
-    openai_ef = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
-    embedding_fxn = chroma_client.CustomEmbeddingFunction(openai_ef)
+    embedding_fxn = chroma_client.CustomEmbeddingFunction(llm_embedding)
     chromadb_client = chroma_client.ChromaBaseClient(
         collection_name=os.environ.get("CHROMA_DB_NAME"),
         embedding_function=embedding_fxn,
     )
-    embedding_indexer = EmbeddingIndexer(chromadb_client, openai_ef)
+    embedding_indexer = EmbeddingIndexer(chromadb_client, llm_embedding)
     embedding_indexer.index_documents(chunks)
     print("Operation successful. Documents have been indexed.")

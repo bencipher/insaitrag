@@ -15,12 +15,13 @@ from pydantic_ai.messages import (
     UserPromptPart,
 )
 from libs.chroma_db.chroma_client import ChromaBaseClient
+from llm_models.source import ModelFactory
 from templates import system_prompt
 import logfire
 from models import CustomerAgentDeps, CustomerDetails
 from mock import order_statuses
 from langchain_openai import OpenAIEmbeddings
-
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
 from pydantic_ai import RunContext
 
@@ -33,7 +34,12 @@ logfire.configure()
 logfire.info("Hello, {name}!", name="world")
 
 load_dotenv()
-model = OpenAIModel("gpt-4o", api_key=os.environ.get("OPENAI_API_KEY"))
+
+llm_model = ModelFactory().get_llm("gemini")
+llm_embedding = ModelFactory().get_embedding("gemini")
+
+# model = OpenAIModel("gpt-4o", api_key=os.environ.get("OPENAI_API_KEY"))
+model = GeminiModel("gemini-1.5-flash", api_key=os.environ.get("GEMINI_API_KEY"))
 customer_rep_agent = Agent(
     model, deps_type=CustomerAgentDeps, system_prompt=system_prompt, retries=2
 )
@@ -153,17 +159,19 @@ def get_order_status(ctx: RunContext[None], order_id: str) -> str:
         return "Order not found."
 
 
+gemini_ef = GoogleGenerativeAIEmbeddings(
+    model="models/embedding-001", google_api_key=os.environ.get("GEMINI_API_KEY")
+)
 openai_ef = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
 deps = CustomerAgentDeps(
     existing_data=CustomerDetails(),
     filepath="output.csv",
-    llm=ChatOpenAI(temperature=0, model="gpt-4o"),
-    vector_client=ChromaBaseClient(os.environ.get("CHROMA_DB_NAME"), openai_ef),
-    embed_fxn=openai_ef,
+    llm=llm_model,
+    vector_client=ChromaBaseClient(os.environ.get("CHROMA_DB_NAME"), gemini_ef),
+    embed_fxn=llm_embedding,
 )
-
 
 
 def run_streamlit():
@@ -173,7 +181,6 @@ def run_streamlit():
         st.session_state.client_history = []
     if "messages" not in st.session_state:
         st.session_state.messages = []
-
 
     for message in st.session_state.client_history:
         with st.chat_message(message["role"]):
@@ -229,6 +236,7 @@ def run_streamlit():
         st.session_state.client_history.append(
             {"role": "assistant", "content": ai_reply}
         )
+
 
 def run_cli():
     print("AI: Hi human, I am here to help")
