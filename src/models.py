@@ -4,7 +4,7 @@ from langchain_openai import ChatOpenAI
 from typing_extensions import Literal, TypedDict
 from pydantic import BaseModel, field_validator
 
-from src.libs.chroma_db.chroma_client import ChromaBaseClient
+from libs.chroma_db.chroma_client import ChromaBaseClient
 
 
 class CustomerDetails(BaseModel):
