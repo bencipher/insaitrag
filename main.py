@@ -6,7 +6,6 @@ load_dotenv()
 
 def main():
     mode = os.environ.get("RUN_MODE", "").lower()
-    print(f"{mode=}")
 
     if mode == "cli":
         print("Running in CLI mode...")

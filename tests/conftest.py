@@ -10,7 +10,8 @@ def mock_os_environ(monkeypatch):
     """
     Fixture to mock os.environ.
     """
-    monkeypatch.setitem(os.environ, "RUN_MODE", "")
+    monkeypatch.setattr(os, "environ", {})
+    return {}
 
 
 @pytest.fixture(scope="function")
