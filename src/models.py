@@ -14,7 +14,7 @@ class CustomerDetails(BaseModel):
     address: Optional[str] = None
     communication_preference: Optional[Literal["whatsapp", "email", "phone"]] = None
 
-    @field_validator("communication_preference", pre=True, always=True)
+    @field_validator("communication_preference", mode="before")
     def normalize_communication_preference(cls, v):
         if isinstance(v, str):
             return v.strip().lower()  # Normalize to lowercase
