@@ -6,7 +6,6 @@ load_dotenv()
 
 def start():
     mode = os.environ.get("RUN_MODE", "").lower()
-
     if mode == "cli":
         print("Running in CLI mode...")
         os.system("python src/agent.py cli")
