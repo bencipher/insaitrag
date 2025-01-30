@@ -38,6 +38,7 @@ load_dotenv()
 llm_model = ModelFactory().get_llm("gemini")
 llm_embedding = ModelFactory().get_embedding("gemini")
 
+
 # model = OpenAIModel("gpt-4o", api_key=os.environ.get("OPENAI_API_KEY"))
 model = GeminiModel("gemini-1.5-flash", api_key=os.environ.get("GEMINI_API_KEY"))
 customer_rep_agent = Agent(
@@ -210,7 +211,6 @@ def run_streamlit():
             asyncio.set_event_loop(loop)
 
         try:
-
             faq_answer = customer_rep_agent.run_sync(
                 user_prompt, deps=deps, message_history=st.session_state.messages
             )

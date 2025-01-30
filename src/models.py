@@ -2,7 +2,7 @@ from typing import Optional, Union
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_openai import ChatOpenAI
 from typing_extensions import Literal, TypedDict
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from libs.chroma_db.chroma_client import ChromaBaseClient
 
 
@@ -13,6 +13,12 @@ class CustomerDetails(BaseModel):
     contact_number: Optional[str] = None
     address: Optional[str] = None
     communication_preference: Optional[Literal["whatsapp", "email", "phone"]] = None
+
+    @field_validator("communication_preference", pre=True, always=True)
+    def normalize_communication_preference(cls, v):
+        if isinstance(v, str):
+            return v.strip().lower()  # Normalize to lowercase
+        return v
 
 
 class CustomerAgentDeps(BaseModel):
