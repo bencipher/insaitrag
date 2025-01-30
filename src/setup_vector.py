@@ -77,8 +77,9 @@ class EmbeddingIndexer:
 
 
 if __name__ == "__main__":
-    llm_model = ModelFactory().get_llm("gemini")
-    llm_embedding = ModelFactory().get_embedding("gemini")
+    provider = os.environ.get("LLM_PROVIDER").strip().lower()
+    llm_model = ModelFactory().get_llm(provider)
+    llm_embedding = ModelFactory().get_embedding(provider)
 
     document_processor = DocumentProcessor(FILE_PATH)
     documents = document_processor.load_json_doc()

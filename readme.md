@@ -1,4 +1,3 @@
-
 # **Conversational Agent Documentation**
 
 ## **Overview**
@@ -15,20 +14,25 @@ Before setting up the environment, you need to configure the following environme
 
 #### **1. General Requirements**
 
-- **OpenAI API Key**  
-  Obtain an OpenAI API key and set it in the `.env` file:
+- **LLM Providers Settings**  
+  Obtain an OpenAI or Gemini API key and set it in the `.env` file:
+
   ```bash
   OPENAI_API_KEY=your_openai_api_key
+  GEMINI_API_KEY=your_gemini_key
+  LLM_PROVIDER=openai/gemini (based on the provider you are using)
   ```
 
 - **LogFire API Key**  
   Obtain a LogFire API key (temporary keys can be used) and set it in the `.env` file:
+
   ```bash
   LOGFIRE_API_KEY=your_logfire_api_key
   ```
 
 - **ChromaDB Authentication Credentials**  
   Set your ChromaDB authentication credentials:
+
   ```bash
   CHROMA_AUTH_CREDENTIALS=your_generated_hex_token
   CHROMA_SERVER_AUTHN_PROVIDER=chromadb.auth.token_authn.TokenAuthenticationServerProvider
@@ -39,6 +43,7 @@ Before setting up the environment, you need to configure the following environme
   Depending on your deployment setup, configure the `CHROMA_HOST` and `CHROMA_PORT` environment variables in your `.env` file:
 
   - **Fully Dockerized Setup**:
+
     ```bash
     CHROMA_HOST=vector_db
     CHROMA_PORT=8000
@@ -54,6 +59,7 @@ Before setting up the environment, you need to configure the following environme
 #### **2. Special Environment Variable for Full Docker Mode**
 
 For running the agent entirely in Docker (Browser Mode only), add the following environment variable:
+
 ```bash
 RUN_MODE=browser
 ```
@@ -62,12 +68,14 @@ RUN_MODE=browser
 
 1. **Install Poetry**  
    Ensure you have Poetry installed on your machine. If not, install it using:
+
    ```bash
    pip install poetry
    ```
 
 2. **Initialize and Activate Poetry**  
    Navigate to the root folder of the project where `pyproject.toml` is located. Initialize the environment using:
+
    ```bash
    poetry install
    ```
@@ -83,6 +91,7 @@ The agent uses ChromaDB as the vector database to store embeddings and facilitat
 
 1. **Running ChromaDB Standalone (for CLI or Local Use)**  
    To use the agent locally (with CLI or Browser Mode), start ChromaDB as a standalone container:
+
    ```bash
    docker compose up -d --build vector-db
    ```
@@ -103,6 +112,7 @@ The agent can run in two modes: CLI Mode (local use) and Browser Mode (local or 
 
 1. **Run the Application**  
    To start the agent locally, execute the following command:
+
    ```bash
    python entry.py
    ```
@@ -118,16 +128,19 @@ If you prefer to use the agent entirely in Docker (Browser Mode only), follow th
 
 1. **Configure the Environment**  
    Set the following environment variable to enable Browser Mode:
+
    ```bash
    RUN_MODE=browser
    ```
 
    You can do this in two ways:
+
    - Set it in the `.env` file.
    - Pass it directly in the Docker build command.
 
 2. **Build and Run the Docker Application**  
    Run the following command to build and start the application:
+
    ```bash
    docker-compose up --build -d
    ```
@@ -143,6 +156,7 @@ If you prefer to use the agent entirely in Docker (Browser Mode only), follow th
 ## **Summary of Usage Modes**
 
 1. **CLI Mode**
+
    - **Use Case**: Local execution only.
    - **How to Run**: Start the application locally (`python entry.py`) and select CLI Mode when prompted.
 

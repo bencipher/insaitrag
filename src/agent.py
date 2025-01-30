@@ -35,8 +35,9 @@ logfire.info("Hello, {name}!", name="world")
 
 load_dotenv()
 
-llm_model = ModelFactory().get_llm("gemini")
-llm_embedding = ModelFactory().get_embedding("gemini")
+provider = os.environ.get("LLM_PROVIDER").strip().lower()
+llm_model = ModelFactory().get_llm(provider)
+llm_embedding = ModelFactory().get_embedding(provider)
 
 
 # model = OpenAIModel("gpt-4o", api_key=os.environ.get("OPENAI_API_KEY"))
