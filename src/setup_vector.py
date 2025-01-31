@@ -47,12 +47,34 @@ class DocumentProcessor:
 # Class to handle embedding and indexing
 class EmbeddingIndexer:
 
-    def __init__(self, chroma_client: chroma_client.ChromaBaseClient, embedding_f):
+    def __init__(self, db: chroma_client.ChromaBaseClient, embedding_f):
 
-        self.chroma_client = chroma_client
+        self.db = db
         self.embedding_fxn = embedding_f
 
+    def embed_document(self, page_content):
+        """
+        Generate embeddings for a given document content.
+        """
+        return self.embedding_fxn.embed_documents([page_content])[
+            0
+        ]  # Extract first embedding
+
+    def write_to_db(self, doc_id, doc, embedding):
+        """
+        Write a document and its embedding into the database.
+        """
+        self.db.add_record(
+            ids=[doc_id],
+            docs=[doc.page_content],
+            metadatas=[doc.metadata],
+            embeddings=[embedding],
+        )
+
     def index_documents(self, documents):
+        """
+        Process and index documents into the database.
+        """
         for doc in documents:
             if not doc.page_content:
                 print(f"Skipping document with empty page_content: {doc}")
@@ -64,16 +86,11 @@ class EmbeddingIndexer:
                 print(f"Missing metadata key: {e}")
                 continue
 
-            existing_data = self.chroma_client.get(where={"question": question})
+            existing_data = self.db.get(where={"question": question})
             if not existing_data["documents"]:
-                chunk_embedding = self.embedding_fxn.embed_documents([doc.page_content])
+                embedding = self.embed_document(doc.page_content)
                 doc_id = str(uuid.uuid4())
-                self.chroma_client.add_record(
-                    ids=[doc_id],
-                    docs=[doc.page_content],
-                    metadatas=[doc.metadata],
-                    embeddings=[chunk_embedding[0]],
-                )
+                self.write_to_db(doc_id, doc, embedding)
 
 
 if __name__ == "__main__":
