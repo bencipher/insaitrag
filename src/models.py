@@ -2,7 +2,7 @@ from typing import Optional, Union
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_openai import ChatOpenAI
 from typing_extensions import Literal, TypedDict
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from libs.chroma_db.chroma_client import ChromaBaseClient
 
@@ -29,8 +29,7 @@ class CustomerAgentDeps(BaseModel):
     vector_client: ChromaBaseClient
     embed_fxn: GoogleGenerativeAIEmbeddings
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ChatMessage(TypedDict):
