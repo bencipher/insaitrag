@@ -130,7 +130,9 @@ def save_customer_contact(ctx: RunContext[CustomerAgentDeps], text_input: str) -
         return "complete"
     else:
         missing_fields = [
-            field for field, value in ctx.existing_data.dict().items() if value is None
+            field
+            for field, value in ctx.deps.existing_data.model_dump().items()
+            if value is None
         ]
         return f"incomplete: missing fields - {', '.join(missing_fields)}"
 
@@ -161,17 +163,11 @@ def get_order_status(ctx: RunContext[None], order_id: str) -> str:
         return "Order not found."
 
 
-gemini_ef = GoogleGenerativeAIEmbeddings(
-    model="models/embedding-001", google_api_key=os.environ.get("GEMINI_API_KEY")
-)
-openai_ef = OpenAIEmbeddings(api_key=os.environ.get("OPENAI_API_KEY"))
-
-
 deps = CustomerAgentDeps(
     existing_data=CustomerDetails(),
     filepath="output.csv",
     llm=llm_model,
-    vector_client=ChromaBaseClient(os.environ.get("CHROMA_DB_NAME"), gemini_ef),
+    vector_client=ChromaBaseClient(os.environ.get("CHROMA_DB_NAME"), llm_embedding),
     embed_fxn=llm_embedding,
 )
 
@@ -212,8 +208,10 @@ def run_streamlit():
             asyncio.set_event_loop(loop)
 
         try:
-            faq_answer = customer_rep_agent.run_sync(
-                user_prompt, deps=deps, message_history=st.session_state.messages
+            faq_answer = loop.run_until_complete(
+                customer_rep_agent.run(
+                    user_prompt, deps=deps, message_history=st.session_state.messages
+                )
             )
             ai_reply = faq_answer.data
         except APIConnectionError as e:
